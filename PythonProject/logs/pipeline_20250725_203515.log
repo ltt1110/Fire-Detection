@@ -1,0 +1,335 @@
+🔍 CHECKING DEPENDENCIES
+============================================================
+❌ opencv-python - MISSING
+✅ numpy
+✅ pandas
+✅ matplotlib
+❌ scikit-learn - MISSING
+✅ seaborn
+✅ tqdm
+✅ joblib
+
+⚠️  Missing packages: opencv-python, scikit-learn
+Installing missing packages...
+
+============================================================
+RUNNING: Installing missing packages
+COMMAND: pip install opencv-python scikit-learn
+============================================================
+✅ SUCCESS: Installing missing packages
+⏱️  Time taken: 0.81 seconds
+Output:
+Requirement already satisfied: opencv-python in /Users/chinhtruongba/.pyenv/versions/3.9.2/lib/python3.9/site-packages (4.11.0.86)
+Requirement already satisfied: scikit-learn in /Users/chinhtruongba/.pyenv/versions/3.9.2/lib/python3.9/site-packages (1.6.0)
+Requirement already satisfied: numpy>=1.21.0 in /Users/chinhtruongba/.pyenv/versions/3.9.2/lib/python3.9/site-packages (from opencv-python) (1.26.4)
+Requirement already satisfied: scipy>=1.6.0 in /Users/chinhtruongba/.pyenv/versions/3.9.2/lib/python3.9/site-packages (from scikit-learn) (1.13.1)
+Requirement already satisfied: joblib>=1.2.0 in /Users/chinhtruongba/.pyenv/versions/3.9.2/lib/python3.9/site-packages (from scikit-learn) (1.4.2)
+Requirement already satisfied: threadpoolctl>=3.1.0 in /Users/chinhtruongba/.pyenv/versions/3.9.2/lib/python3.9/site-packages (from scikit-learn) (3.5.0)
+
+
+🔍 CHECKING DATASET STRUCTURE
+============================================================
+✅ dataset/train/images (3900 files)
+✅ dataset/train/labels (3900 files)
+✅ dataset/val/images (1300 files)
+✅ dataset/val/labels (1300 files)
+✅ dataset/test/images (1300 files)
+✅ dataset/test/labels (1300 files)
+
+✅ Dataset structure is correct!
+
+============================================================
+RUNNING: Data Analysis
+COMMAND: python data_analysis.py
+============================================================
+✅ SUCCESS: Data Analysis
+⏱️  Time taken: 222.28 seconds
+Output:
+FIRE DATASET ANALYSIS
+============================================================
+ANALYZING DATASET DISTRIBUTION
+==================================================
+Train images: 3900
+Validation images: 1300
+Test images: 1300
+Total images: 6500
+
+Loading dataset and extracting features...
+Loading dataset...
+Dataset loaded: 5200 samples, 26 features
+Class distribution: [3469 1731]
+
+ANALYZING FEATURES
+==================================================
+Feature Statistics:
+         red_ratio  yellow_ratio  ...  high_freq_energy        label
+count  5200.000000   5200.000000  ...       5200.000000  5200.000000
+mean      0.086217      0.031007  ...     352740.218227     0.332885
+std       0.112075      0.047023  ...      28366.755346     0.471291
+min       0.000000      0.000000  ...     238310.423669     0.000000
+25%       0.011480      0.002312  ...     338044.373744     0.000000
+50%       0.045898      0.012217  ...     356166.655732     0.000000
+75%       0.115130      0.037408  ...     372761.436249     1.000000
+max       0.951849      0.470703  ...     416546.826632     1.000000
+
+[8 rows x 27 columns]
+
+Feature Comparison between Classes:
+                   No_Fire_Mean      Fire_Mean  ...   No_Fire_Std      Fire_Std
+red_ratio              0.103615       0.051351  ...      0.125083      0.067533
+yellow_ratio           0.028591       0.035848  ...      0.045299      0.049964
+orange_ratio           0.122096       0.109004  ...      0.140530      0.143866
+fire_color_ratio       0.254302       0.196203  ...      0.221962      0.197010
+red_mean              97.487112     109.367748  ...     39.108157     33.067246
+green_mean            88.873690     106.499611  ...     38.123493     31.678276
+blue_mean             84.096408     103.913768  ...     38.759747     34.881557
+red_std               52.544667      55.069609  ...     15.798373     18.242591
+green_std             49.699448      54.213364  ...     15.219839     18.163730
+blue_std              48.199456      55.839846  ...     16.025186     20.443065
+red_green_ratio        1.154044       1.031904  ...      0.303747      0.112879
+gradient_mean         73.069390      82.866815  ...     38.866237     45.551978
+gradient_std          96.510519      97.971357  ...     29.661584     31.999496
+gradient_max         855.779274     837.110293  ...    109.703039    132.501992
+entropy                6.887749       7.122749  ...      0.950792      0.783536
+contrast              49.376026      53.826617  ...     14.983127     17.968577
+largest_area         631.020323     611.435875  ...    935.015417    774.677751
+perimeter            566.947667     784.068876  ...    740.978919    837.091860
+compactness          125.783049     179.990792  ...    262.040168    299.028670
+aspect_ratio           1.078228       1.159345  ...      1.054886      1.246028
+edge_ratio             0.086736       0.101414  ...      0.056743      0.065972
+magnitude_mean         7.657758       7.736406  ...      0.554575      0.657999
+magnitude_std          0.905071       0.886903  ...      0.099257      0.104934
+magnitude_max         15.189901      15.427070  ...      0.639122      0.428465
+low_freq_energy    32764.243990   32899.005744  ...   1476.559013   1628.271928
+high_freq_energy  351471.434130  355282.917266  ...  26573.017450  31511.770773
+
+[26 rows x 5 columns]
+
+VISUALIZING SAMPLE IMAGES
+==================================================
+
+DIMENSIONALITY REDUCTION ANALYSIS
+==================================================
+Number of PCs needed to explain 95% variance: 12
+Running t-SNE...
+
+FEATURE IMPORTANCE ANALYSIS
+==================================================
+Top 10 Most Important Features (Random Forest):
+             Feature  RF_Importance  ANOVA_Score
+0          red_ratio       0.071216   263.820609
+6          blue_mean       0.067531   322.265170
+10   red_green_ratio       0.056943   261.825266
+5         green_mean       0.048050   275.191086
+22     magnitude_std       0.047913    37.232261
+9           blue_std       0.047248   217.154128
+1       yellow_ratio       0.046173    27.646287
+3   fire_color_ratio       0.045095    85.129621
+2       orange_ratio       0.041783     9.864015
+23     magnitude_max       0.038684   194.694530
+
+Saving analysis results...
+
+Analysis completed! Files created:
+- dataset_distribution.png
+- feature_correlation_detailed.png
+- feature_distribution_by_class.png
+- sample_images.png
+- pca_analysis.png
+- tsne_visualization.png
+- feature_importance.png
+- feature_comparison.csv
+- feature_importance.csv
+- pca_results.csv
+
+
+============================================================
+RUNNING: Model Training
+COMMAND: python fire_classification_system.py
+============================================================
+✅ SUCCESS: Model Training
+⏱️  Time taken: 61.43 seconds
+Output:
+FIRE CLASSIFICATION SYSTEM
+==================================================
+Loading dataset...
+Dataset loaded: 5200 samples, 26 features
+Class distribution: [3469 1731]
+
+DATA ANALYSIS
+------------------------------
+Class distribution: {0: 3469, 1: 1731}
+
+Feature statistics:
+         red_ratio  yellow_ratio  ...  high_freq_energy        label
+count  5200.000000   5200.000000  ...       5200.000000  5200.000000
+mean      0.086217      0.031007  ...     352740.218227     0.332885
+std       0.112075      0.047023  ...      28366.755346     0.471291
+min       0.000000      0.000000  ...     238310.423669     0.000000
+25%       0.011480      0.002312  ...     338044.373744     0.000000
+50%       0.045898      0.012217  ...     356166.655732     0.000000
+75%       0.115130      0.037408  ...     372761.436249     1.000000
+max       0.951849      0.470703  ...     416546.826632     1.000000
+
+[8 rows x 27 columns]
+
+MODEL TRAINING
+------------------------------
+Training models...
+Training KNN...
+KNN - Accuracy: 0.8712
+Training SVM...
+SVM - Accuracy: 0.8192
+Training Decision Tree...
+Decision Tree - Accuracy: 0.8481
+Training Random Forest...
+Random Forest - Accuracy: 0.9038
+Training Logistic Regression...
+Logistic Regression - Accuracy: 0.7067
+
+==================================================
+MODEL EVALUATION RESULTS
+==================================================
+
+KNN:
+Accuracy: 0.8712
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.90      0.91      0.90       694
+           1       0.81      0.80      0.81       346
+
+    accuracy                           0.87      1040
+   macro avg       0.86      0.85      0.85      1040
+weighted avg       0.87      0.87      0.87      1040
+
+Confusion Matrix:
+[[629  65]
+ [ 69 277]]
+
+SVM:
+Accuracy: 0.8192
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.83      0.91      0.87       694
+           1       0.78      0.63      0.70       346
+
+    accuracy                           0.82      1040
+   macro avg       0.81      0.77      0.79      1040
+weighted avg       0.82      0.82      0.81      1040
+
+Confusion Matrix:
+[[633  61]
+ [127 219]]
+
+Decision Tree:
+Accuracy: 0.8481
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.89      0.88      0.89       694
+           1       0.76      0.79      0.78       346
+
+    accuracy                           0.85      1040
+   macro avg       0.83      0.83      0.83      1040
+weighted avg       0.85      0.85      0.85      1040
+
+Confusion Matrix:
+[[609  85]
+ [ 73 273]]
+
+Random Forest:
+Accuracy: 0.9038
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.91      0.95      0.93       694
+           1       0.89      0.81      0.85       346
+
+    accuracy                           0.90      1040
+   macro avg       0.90      0.88      0.89      1040
+weighted avg       0.90      0.90      0.90      1040
+
+Confusion Matrix:
+[[660  34]
+ [ 66 280]]
+
+Logistic Regression:
+Accuracy: 0.7067
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.74      0.87      0.80       694
+           1       0.59      0.38      0.47       346
+
+    accuracy                           0.71      1040
+   macro avg       0.66      0.63      0.63      1040
+weighted avg       0.69      0.71      0.69      1040
+
+Confusion Matrix:
+[[602  92]
+ [213 133]]
+
+Best model: Random Forest
+
+Model saved successfully!
+Files created:
+- best_fire_classifier.pkl
+- fire_classifier_scaler.pkl
+- fire_classifier_features.pkl
+- model_comparison_results.png
+- feature_correlation.png
+
+
+============================================================
+RUNNING: Demo
+COMMAND: python fire_detection_demo.py
+============================================================
+✅ SUCCESS: Demo
+⏱️  Time taken: 30.91 seconds
+Output:
+FIRE DETECTION DEMO
+========================================
+Model loaded successfully!
+
+Demo with sample images from dataset:
+
+1. Testing with FIRE image:
+Image: dataset/train/images/train_30.jpg
+Prediction: FIRE
+Confidence: 0.840
+Fire probability: 0.840
+No fire probability: 0.160
+
+2. Testing with NO FIRE image:
+Image: dataset/train/images/train_1002.jpg
+Prediction: NO FIRE
+Confidence: 0.990
+Fire probability: 0.010
+No fire probability: 0.990
+
+3. Batch prediction demo:
+Processing 1300 images...
+
+Batch prediction completed!
+Total images: 1300
+Fire detected: 475
+No fire: 825
+Results saved to: test_batch_results.txt
+
+
+📊 CREATING SUMMARY REPORT
+============================================================
+✅ Summary report created: pipeline_summary_report.md
+
+🎉 PIPELINE COMPLETED SUCCESSFULLY!
+================================================================================
+Completed at: 2025-07-25 20:40:32
+Log file: logs/pipeline_20250725_203515.log
+Summary report: pipeline_summary_report.md

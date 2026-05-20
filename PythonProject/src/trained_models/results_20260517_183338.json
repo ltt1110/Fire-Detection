@@ -1,0 +1,144 @@
+{
+  "KNN": {
+    "train_result": {
+      "cv_score": 0.9266957628659757,
+      "best_params": {
+        "metric": "euclidean",
+        "n_neighbors": 15,
+        "p": 1,
+        "weights": "distance"
+      }
+    },
+    "eval_result": {
+      "accuracy": 0.8452830188679246,
+      "precision": 0.8130563798219584,
+      "recall": 0.9351535836177475,
+      "f1_score": 0.8698412698412699,
+      "roc_auc": 0.9281260350513385,
+      "confusion_matrix": [
+        [
+          174,
+          63
+        ],
+        [
+          19,
+          274
+        ]
+      ]
+    }
+  },
+  "SVM": {
+    "train_result": {
+      "cv_score": 1.0,
+      "best_params": {
+        "C": 0.1,
+        "degree": 2,
+        "gamma": 0.1,
+        "kernel": "rbf"
+      }
+    },
+    "eval_result": {
+      "accuracy": 0.44716981132075473,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "roc_auc": 0.10999265563571953,
+      "confusion_matrix": [
+        [
+          237,
+          0
+        ],
+        [
+          293,
+          0
+        ]
+      ]
+    }
+  },
+  "Decision Tree": {
+    "train_result": {
+      "cv_score": 0.9155773777050372,
+      "best_params": {
+        "criterion": "gini",
+        "max_depth": 3,
+        "max_features": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2
+      }
+    },
+    "eval_result": {
+      "accuracy": 0.879245283018868,
+      "precision": 0.8705501618122977,
+      "recall": 0.9180887372013652,
+      "f1_score": 0.893687707641196,
+      "roc_auc": 0.931690211834507,
+      "confusion_matrix": [
+        [
+          197,
+          40
+        ],
+        [
+          24,
+          269
+        ]
+      ]
+    }
+  },
+  "Logistic Regression": {
+    "train_result": {
+      "cv_score": 0.9113220585561012,
+      "best_params": {
+        "C": 1,
+        "penalty": "l1",
+        "solver": "saga"
+      }
+    },
+    "eval_result": {
+      "accuracy": 0.9075471698113208,
+      "precision": 0.9093959731543624,
+      "recall": 0.9249146757679181,
+      "f1_score": 0.9170896785109983,
+      "roc_auc": 0.9595195921717717,
+      "confusion_matrix": [
+        [
+          210,
+          27
+        ],
+        [
+          22,
+          271
+        ]
+      ]
+    }
+  },
+  "Random Forest": {
+    "train_result": {
+      "cv_score": 0.9377377705037281,
+      "best_params": {
+        "class_weight": "balanced",
+        "max_depth": 15,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 5,
+        "n_estimators": 100
+      }
+    },
+    "eval_result": {
+      "accuracy": 0.9339622641509434,
+      "precision": 0.9215686274509803,
+      "recall": 0.962457337883959,
+      "f1_score": 0.9415692821368948,
+      "roc_auc": 0.9763396264454717,
+      "confusion_matrix": [
+        [
+          213,
+          24
+        ],
+        [
+          11,
+          282
+        ]
+      ]
+    }
+  }
+}

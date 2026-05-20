@@ -1,0 +1,31 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Core ML libraries
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+# Image processing
+opencv-python>=4.5.0
+Pillow>=8.3.0
+
+# Web framework
+Flask>=2.0.0
+
+# Model persistence
+joblib>=1.1.0
+
+# Additional utilities
+tqdm>=4.62.0
+scipy>=1.7.0
+
+# YOLO for deep learning comparison
+ultralytics>=8.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Optional: For better performance
+# numba>=0.56.0
+# cython>=0.29.0

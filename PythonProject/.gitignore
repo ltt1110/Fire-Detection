@@ -1,0 +1,5 @@
+dataset/
+dataset_yolo/
+src/results/
+src/uploads/
+src/__pycache__/
