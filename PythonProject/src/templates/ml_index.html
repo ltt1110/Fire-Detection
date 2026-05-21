@@ -49,6 +49,33 @@
             padding: 40px;
         }
 
+        .nav-tabs {
+            display: flex; list-style: none; padding: 0; margin: 0 0 20px 0;
+            border-bottom: 2px solid #dee2e6; justify-content: center; gap: 10px;
+        }
+        .nav-tabs li {
+            padding: 12px 25px; cursor: pointer; font-weight: bold; color: #6c757d;
+            background: #f8f9fa; border-radius: 10px 10px 0 0; border: 2px solid transparent;
+            border-bottom: none; transition: 0.3s; font-size: 1.1em;
+        }
+        .nav-tabs li:hover { background: #e9ecef; }
+        .nav-tabs li.active {
+            color: #ff6b6b; background: white; border-color: #dee2e6;
+            border-bottom-color: white; transform: translateY(2px);
+        }
+        .tab-content { display: none; animation: fadeIn 0.4s; }
+        .tab-content.active { display: block; }
+
+        .webcam-container {
+            text-align: center; background: #f8f9fa; padding: 20px;
+            border-radius: 15px; border: 3px dashed #dee2e6;
+        }
+        #live-stream {
+            width: 100%; max-width: 720px; border-radius: 10px;
+            border: 5px solid #333; margin-top: 15px; background: #000; min-height: 400px;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         .upload-section {
             background: #f8f9fa;
             border-radius: 15px;
@@ -380,7 +407,7 @@
     <div class="container">
         <div class="header">
             <h1>🔥 Fire Detection</h1>
-            <p>Machine Learning Models - Upload ảnh để phân tích</p>
+            <p>Hệ thống cảnh báo cháy thông minh sử dụng AI & Deep Learning</p>
         </div>
 
         <div class="main-content">
@@ -415,7 +442,13 @@
                 </div>
             </div>
 
+            <ul class="nav-tabs">
+                <li class="active" onclick="switchTab('tab-upload', this)">📸 Phân Tích Ảnh Tĩnh</li>
+                <li onclick="switchTab('tab-webcam', this)">🔴 Live Stream Webcam</li>
+            </ul>
+
             <!-- Upload Section -->
+            <div id="tab-upload" class="tab-content active">
             <div class="upload-section" id="uploadSection">
                 <div class="upload-icon">📸</div>
                 <h2>Upload ảnh để phân tích</h2>
@@ -447,6 +480,17 @@
                 </div>
             </div>
         </div>
+        </div>
+
+        <div id="tab-webcam" class="tab-content">
+                <div class="webcam-container">
+                    <h2 style="color: #ff4757;">🔴 YOLOv8 Real-time Detection</h2>
+                    <p style="margin-top: 10px; color: #666;">Camera sẽ tự động bật khi bạn mở Tab này.</p>
+
+                    <img id="live-stream" src="" alt="Đang chờ kết nối Camera...">
+                </div>
+        </div>
+
     </div>
 
     <script>
@@ -459,6 +503,24 @@
             setupDragAndDrop();
             setupFileInput();
         });
+
+        function switchTab(tabId, element) {
+            // Xóa trạng thái active của tất cả các tab
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tabs li').forEach(li => li.classList.remove('active'));
+
+            // Set active cho tab hiện tại
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+
+            // Bật/Tắt Camera để tiết kiệm tài nguyên
+            const imgTag = document.getElementById('live-stream');
+            if (tabId === 'tab-webcam') {
+                imgTag.src = "{{ url_for('video_feed') }}";
+            } else {
+                imgTag.src = ""; // Xóa src sẽ tự động ngắt kết nối Camera
+            }
+        }
 
         // Check models status
         async function checkModelsStatus() {

@@ -15,6 +15,8 @@ import json
 from ml_models import MLModelTrainer
 from fire_feature_extractor import FireFeatureExtractor
 from yolo_model import YOLOFireDetector, YOLO_AVAILABLE
+from flask import Response
+from webcam_service import generate_frames
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -314,6 +316,13 @@ def train_status():
         'num_models_loaded': len(trainer.trained_models),
         'model_names': list(trainer.trained_models.keys()) if models_loaded else []
     })
+
+@app.route('/video_feed')
+def video_feed():
+    """API Endpoint: Cung cấp luồng video cho thẻ <img> trên Web"""
+    # Gọi hàm generate_frames từ file webcam_service.py
+    # và "tráng" qua biến yolo_detector toàn cục của Web App
+    return Response(generate_frames(yolo_detector), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
     print("🚀 Khởi động ML Web Application...")
