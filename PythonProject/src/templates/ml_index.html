@@ -489,6 +489,11 @@
 
                     <img id="live-stream" src="" alt="Đang chờ kết nối Camera...">
                 </div>
+                <div class="results-section" id="webcamResultsSection" style="display: block; margin-top: 30px;">
+                    <h3 style="text-align: center; margin-bottom: 20px;">📊 Phân tích Real-time từ 6 Models</h3>
+                    <div class="predictions-grid" id="webcamPredictionsGrid">
+                        </div>
+                </div>
         </div>
 
     </div>
@@ -504,21 +509,88 @@
             setupFileInput();
         });
 
+        let fireCheckInterval = null; // Biến quản lý vòng lặp hỏi server
+        let isSpeaking = false;       // Cờ chống việc đọc đè âm thanh lên nhau
+
+        // Hàm gọi Web Speech API đọc tiếng Việt
+        function speakWarning() {
+            if (isSpeaking) return; // Đang đọc thì không đọc đè thêm
+
+            let msg = new SpeechSynthesisUtterance("Cảnh báo, phát hiện có cháy!");
+            msg.lang = "vi-VN"; // Setup giọng Tiếng Việt
+            msg.rate = 1.1;     // Tốc độ đọc nhanh hơn 1 tí cho kịch tính
+
+            msg.onstart = () => {
+                isSpeaking = true;
+            };
+            msg.onend = () => {
+                isSpeaking = false;
+            };
+
+            window.speechSynthesis.speak(msg);
+        }
+
+        // Hàm liên tục gọi API hỏi Server xem Camera có đang bắt được lửa không
+        function checkFireState() {
+            fetch('/get_fire_status')
+                    .then(res => res.json())
+                    .then(data => {
+                        // 1. Kích hoạt còi báo cháy
+                        if (data.is_fire) {
+                            speakWarning();
+                        }
+
+                        // 2. Vẽ 6 cái thẻ Models y như lúc Upload ảnh
+                        if (data.predictions) {
+                            const grid = document.getElementById('webcamPredictionsGrid');
+                            grid.innerHTML = ''; // Xóa bài cũ
+
+                            Object.entries(data.predictions).forEach(([modelName, prediction]) => {
+                                const isBest = modelName === data.best_model?.name;
+                                const isFire = prediction.prediction === 'FIRE';
+                                const isYolo = modelName.toUpperCase() === 'YOLO';
+
+                                const card = document.createElement('div');
+                                card.className = `prediction-card ${isBest ? 'best' : ''} ${isFire ? 'fire' : 'no-fire'}`;
+                                const confidenceClass = prediction.confidence > 0.8 ? 'high' : prediction.confidence > 0.6 ? 'medium' : 'low';
+                                const modelNameHtml = isYolo ? `${modelName}<span class="yolo-badge">DEEP LEARNING</span>` : modelName;
+
+                                card.innerHTML = `
+                                        <div class="model-name">${modelNameHtml}</div>
+                                        <div class="prediction-result ${isFire ? 'fire' : 'no-fire'}">${prediction.prediction}</div>
+                                        <div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${prediction.confidence * 100}%"></div></div>
+                                        <div class="probability-info">
+                                            <span>P(Fire): ${(prediction.probability_fire * 100).toFixed(1)}%</span>
+                                            <span>P(No Fire): ${(prediction.probability_no_fire * 100).toFixed(1)}%</span>
+                                        </div>
+                                        <div style="text-align: center; margin-top: 10px; font-weight: bold; color: #666;">
+                                            Confidence: ${(prediction.confidence * 100).toFixed(1)}%
+                                        </div>
+                                        ${isBest ? '<div style="text-align: center; margin-top: 10px; color: #28a745; font-weight: bold;">🏆 Best Model</div>' : ''}
+                                    `;
+                                grid.appendChild(card);
+                            });
+                        }
+                    })
+                    .catch(e => console.log("Lỗi check API:", e));
+        }
         function switchTab(tabId, element) {
-            // Xóa trạng thái active của tất cả các tab
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.nav-tabs li').forEach(li => li.classList.remove('active'));
-
-            // Set active cho tab hiện tại
             document.getElementById(tabId).classList.add('active');
             element.classList.add('active');
 
-            // Bật/Tắt Camera để tiết kiệm tài nguyên
             const imgTag = document.getElementById('live-stream');
             if (tabId === 'tab-webcam') {
                 imgTag.src = "{{ url_for('video_feed') }}";
+                // Khi mở Camera -> Bắt đầu vòng lặp hỏi Server 1 giây 1 lần
+                fireCheckInterval = setInterval(checkFireState, 1000);
             } else {
-                imgTag.src = ""; // Xóa src sẽ tự động ngắt kết nối Camera
+                imgTag.src = "";
+                // Khi tắt Camera -> Tắt vòng lặp hỏi Server & Bịt miệng "Chị Google" nếu đang đọc dở
+                if (fireCheckInterval) clearInterval(fireCheckInterval);
+                window.speechSynthesis.cancel();
+                isSpeaking = false;
             }
         }
 
