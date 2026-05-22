@@ -39,7 +39,7 @@ def generate_frames(trainer, yolo_model_instance):
 
         frame = cv2.flip(frame, 1)
         current_time = time.time()
-        is_fire_yolo = False
+        # is_fire_yolo = False
 
         # Nếu YOLO đã sẵn sàng thì đưa vào phân tích
         if yolo_model_instance and yolo_model_instance.is_trained:
@@ -70,7 +70,7 @@ def generate_frames(trainer, yolo_model_instance):
                 no_fire_idx = 1 - fire_idx
 
                 all_preds['YOLO'] = {
-                    'prediction': 'FIRE' if is_fire_yolo else 'NO FIRE',
+                    'prediction': 'FIRE' if is_fire else 'NO FIRE',
                     'confidence': confidence,
                     'probability_fire': float(probs.data.cpu().numpy()[fire_idx]),
                     'probability_no_fire': float(probs.data.cpu().numpy()[no_fire_idx])
@@ -93,9 +93,9 @@ def generate_frames(trainer, yolo_model_instance):
 
                 last_ml_time = current_time  # Reset bộ đếm
 
-                # --- Vẽ UI cơ bản lên Camera ---
-            color = (0, 0, 255) if is_fire_yolo else (0, 255, 0)
-            cv2.putText(frame, f"YOLO STATUS: {class_name}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+
+            # color = (0, 0, 255) if is_fire else (0, 255, 0)
+            # cv2.putText(frame, f"YOLO STATUS: {class_name}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
 
             if is_fire:
