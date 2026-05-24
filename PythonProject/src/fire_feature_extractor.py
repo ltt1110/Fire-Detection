@@ -297,6 +297,19 @@ class FireFeatureExtractor:
     def create_feature_vector(self, feature_data: Dict[str, Any]) -> np.ndarray:
         """
         Tạo vector đặc trưng từ dữ liệu đã trích xuất.
+
+        Breakdown:
+          - Color Histogram (692): H(180) + S(256) + V(256)
+          - Fire Color Mask  (5) : red_ratio, orange_ratio, yellow_ratio,
+                                   total_fire_ratio, fire_pixels
+          - Texture Features (5) : gradient_mean, gradient_std, entropy,
+                                   lbp_mean, lbp_std
+          - Statistical     (11) : r/g/b mean+std+skew, bright_ratio, dark_ratio
+          - Fire-Specific    (9) : edge_blurriness, bottom/top_fire_ratio,
+                                   fire_compactness, largest_contour_ratio,
+                                   num_fire_contours, fire_internal_std/mean,
+                                   fire_coverage
+
         Tổng: 692 + 5 + 5 + 11 + 9 = 722 features
         """
         vectors = []

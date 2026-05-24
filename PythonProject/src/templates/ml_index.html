@@ -1,829 +1,1205 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔥 Fire Detection - ML Models</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FireGuard AI — Hệ thống phát hiện cháy thông minh</title>
+  <meta name="description" content="Hệ thống phát hiện cháy real-time sử dụng YOLO và Machine Learning">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+  <style>
+    /* ══════════════════════════════════════════════
+       DESIGN TOKENS
+    ══════════════════════════════════════════════ */
+    :root {
+      --bg:           #0b0d14;
+      --bg2:          #111520;
+      --sidebar:      #0d1020;
+      --card:         rgba(255,255,255,0.035);
+      --card-border:  rgba(255,107,55,0.18);
+      --card-hover:   rgba(255,255,255,0.06);
+      --fire:         #ff4757;
+      --fire2:        #ff6b35;
+      --fire-glow:    rgba(255,71,87,0.25);
+      --amber:        #ffa502;
+      --green:        #2ed573;
+      --blue:         #5352ed;
+      --text:         #e8ecf4;
+      --text2:        #7b8499;
+      --border:       rgba(255,255,255,0.07);
+      --radius:       14px;
+      --shadow:       0 8px 32px rgba(0,0,0,0.45);
+      --transition:   0.25s cubic-bezier(.4,0,.2,1);
+    }
+    [data-theme="light"] {
+      --bg:          #f0f3fa;
+      --bg2:         #ffffff;
+      --sidebar:     #131929;
+      --card:        rgba(255,255,255,0.9);
+      --card-border: rgba(255,107,55,0.2);
+      --card-hover:  rgba(255,107,55,0.06);
+      --text:        #1a2035;
+      --text2:       #6b7894;
+      --border:      rgba(0,0,0,0.07);
+      --shadow:      0 4px 20px rgba(0,0,0,0.1);
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
+    /* ══════════════════════════════════════════════
+       RESET & BASE
+    ══════════════════════════════════════════════ */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { height:100%; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100%;
+      display: flex;
+      overflow: hidden;
+    }
 
-        .header {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
+    /* ══════════════════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════════════════ */
+    .sidebar {
+      width: 230px;
+      min-width: 230px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      gap: 6px;
+      z-index: 10;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px 20px;
+      font-size: 1.2rem; font-weight: 700;
+      color: #fff;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .logo-icon { font-size: 1.6rem; filter: drop-shadow(0 0 8px #ff4757); }
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
+    .nav-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px;
+      border: none; background: transparent;
+      color: var(--text2); font-size: 0.9rem; font-weight: 500;
+      border-radius: 10px; cursor: pointer;
+      transition: var(--transition);
+      text-align: left; width: 100%;
+    }
+    .nav-btn:hover { background: var(--card); color: var(--text); }
+    .nav-btn.active {
+      background: linear-gradient(135deg, rgba(255,71,87,0.2), rgba(255,107,53,0.12));
+      color: var(--fire);
+      border: 1px solid rgba(255,71,87,0.25);
+      box-shadow: 0 0 12px rgba(255,71,87,0.15);
+    }
+    .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; }
 
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
+    .sidebar-spacer { flex: 1; }
 
-        .main-content {
-            padding: 40px;
-        }
+    .sidebar-footer { padding-top: 14px; border-top: 1px solid var(--border); }
+    .status-dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; margin-right: 6px;
+      background: var(--green); box-shadow: 0 0 6px var(--green);
+    }
+    .status-dot.offline { background: #ff4757; box-shadow: 0 0 6px #ff4757; }
+    .status-dot.warn    { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
 
-        .nav-tabs {
-            display: flex; list-style: none; padding: 0; margin: 0 0 20px 0;
-            border-bottom: 2px solid #dee2e6; justify-content: center; gap: 10px;
-        }
-        .nav-tabs li {
-            padding: 12px 25px; cursor: pointer; font-weight: bold; color: #6c757d;
-            background: #f8f9fa; border-radius: 10px 10px 0 0; border: 2px solid transparent;
-            border-bottom: none; transition: 0.3s; font-size: 1.1em;
-        }
-        .nav-tabs li:hover { background: #e9ecef; }
-        .nav-tabs li.active {
-            color: #ff6b6b; background: white; border-color: #dee2e6;
-            border-bottom-color: white; transform: translateY(2px);
-        }
-        .tab-content { display: none; animation: fadeIn 0.4s; }
-        .tab-content.active { display: block; }
+    .sidebar-info {
+      font-size: 0.75rem; color: var(--text2);
+      padding: 8px 10px;
+      background: var(--card);
+      border-radius: 8px; margin-bottom: 8px;
+      line-height: 1.6;
+    }
+    .theme-btn {
+      width: 100%; padding: 9px 14px;
+      border: 1px solid var(--border);
+      background: var(--card); color: var(--text2);
+      border-radius: 8px; cursor: pointer;
+      font-size: 0.82rem; font-family: inherit;
+      transition: var(--transition); text-align: left;
+    }
+    .theme-btn:hover { color: var(--text); background: var(--card-hover); }
 
-        .webcam-container {
-            text-align: center; background: #f8f9fa; padding: 20px;
-            border-radius: 15px; border: 3px dashed #dee2e6;
-        }
-        #live-stream {
-            width: 100%; max-width: 720px; border-radius: 10px;
-            border: 5px solid #333; margin-top: 15px; background: #000; min-height: 400px;
-        }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    /* ══════════════════════════════════════════════
+       MAIN CONTENT
+    ══════════════════════════════════════════════ */
+    .main {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--bg);
+    }
 
-        .upload-section {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            text-align: center;
-            border: 3px dashed #dee2e6;
-            transition: all 0.3s ease;
-        }
+    /* Top bar */
+    .topbar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .topbar-title { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    .topbar-spacer { flex: 1; }
+    .topbar-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.78rem; color: var(--text2);
+      padding: 5px 12px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 20px;
+    }
 
-        .upload-section:hover {
-            border-color: #ff6b6b;
-            background: #fff5f5;
-        }
+    /* Threshold slider widget */
+    .threshold-widget {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.8rem; color: var(--text2);
+    }
+    .threshold-widget input[type=range] {
+      width: 90px; accent-color: var(--fire);
+      cursor: pointer;
+    }
+    .threshold-val {
+      min-width: 32px; font-weight: 600;
+      color: var(--fire); font-size: 0.82rem;
+    }
 
-        .upload-section.dragover {
-            border-color: #ff6b6b;
-            background: #fff5f5;
-            transform: scale(1.02);
-        }
+    /* Content area */
+    .content { flex: 1; overflow-y: auto; padding: 28px; }
 
-        .upload-icon {
-            font-size: 4em;
-            color: #ff6b6b;
-            margin-bottom: 20px;
-        }
+    /* ══════════════════════════════════════════════
+       TAB PANELS
+    ══════════════════════════════════════════════ */
+    .tab-panel { display: none; animation: fadeSlide .3s ease; }
+    .tab-panel.active { display: block; }
+    @keyframes fadeSlide {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
 
-        .file-input {
-            display: none;
-        }
+    /* ══════════════════════════════════════════════
+       CARDS
+    ══════════════════════════════════════════════ */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      backdrop-filter: blur(12px);
+      transition: var(--transition);
+    }
+    .card:hover { background: var(--card-hover); }
+    .card-title { font-size: 0.85rem; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
 
-        .upload-btn {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 10px;
-        }
+    /* ══════════════════════════════════════════════
+       STATS CARDS
+    ══════════════════════════════════════════════ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px; margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: 18px 20px;
+      text-align: center;
+    }
+    .stat-val  { font-size: 2rem; font-weight: 700; color: var(--text); line-height: 1; }
+    .stat-label{ font-size: 0.75rem; color: var(--text2); margin-top: 6px; }
+    .stat-card.fire-stat  .stat-val { color: var(--fire); }
+    .stat-card.green-stat .stat-val { color: var(--green); }
+    .stat-card.amber-stat .stat-val { color: var(--amber); }
 
-        .upload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
-        }
+    /* ══════════════════════════════════════════════
+       UPLOAD TAB
+    ══════════════════════════════════════════════ */
+    .upload-zone {
+      border: 2px dashed var(--card-border);
+      border-radius: var(--radius);
+      padding: 52px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--card);
+      margin-bottom: 24px;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--fire);
+      background: rgba(255,71,87,0.06);
+      transform: scale(1.01);
+    }
+    .upload-icon { font-size: 3.5rem; margin-bottom: 14px; display: block; }
+    .upload-zone h2 { font-size: 1.2rem; color: var(--text); margin-bottom: 8px; }
+    .upload-zone p  { font-size: 0.85rem; color: var(--text2); }
 
-        .status-section {
-            background: #e8f5e8;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-left: 5px solid #28a745;
-        }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 22px; border: none; border-radius: 24px;
+      font-family: inherit; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; transition: var(--transition);
+    }
+    .btn-fire {
+      background: linear-gradient(135deg, var(--fire), var(--fire2));
+      color: #fff; box-shadow: 0 4px 16px var(--fire-glow);
+    }
+    .btn-fire:hover { transform: translateY(-2px); box-shadow: 0 6px 22px var(--fire-glow); }
+    .btn-outline {
+      background: var(--card); color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { color: var(--text); background: var(--card-hover); }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
 
-        .status-section.error {
-            background: #ffe8e8;
-            border-left-color: #dc3545;
-        }
+    /* Spinner */
+    .spinner-wrap { display:none; text-align:center; padding:50px; }
+    .spinner {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 3px solid var(--border);
+      border-top-color: var(--fire);
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        .status-section.warning {
-            background: #fff3cd;
-            border-left-color: #ffc107;
-        }
+    /* Predictions grid */
+    .predictions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px; margin-top: 20px;
+    }
+    .pred-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: 20px;
+      transition: var(--transition);
+    }
+    .pred-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+    .pred-card.is-fire   { border-color: rgba(255,71,87,0.5); background: rgba(255,71,87,0.06); }
+    .pred-card.no-fire   { border-color: rgba(46,213,115,0.3); background: rgba(46,213,115,0.04); }
+    .pred-card.is-best   { box-shadow: 0 0 20px rgba(255,165,2,0.25); border-color: var(--amber); }
 
-        .results-section {
-            display: none;
-            margin-top: 30px;
-        }
+    .pred-name    { font-size: 0.85rem; color: var(--text2); margin-bottom: 10px; display:flex; align-items:center; gap:6px; }
+    .pred-result  { font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 12px; }
+    .pred-result.fire   { color: var(--fire); }
+    .pred-result.nofire { color: var(--green); }
 
-        .image-preview {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+    .conf-bar-wrap { background: rgba(255,255,255,0.08); border-radius: 8px; height: 8px; overflow: hidden; margin: 8px 0; }
+    .conf-bar {
+      height: 100%; border-radius: 8px;
+      background: linear-gradient(90deg, var(--fire), var(--fire2));
+      transition: width .6s ease;
+    }
+    .conf-bar.safe { background: linear-gradient(90deg, var(--green), #00d2a0); }
 
-        .image-preview img {
-            max-width: 100%;
-            max-height: 400px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+    .pred-probs {
+      display: flex; justify-content: space-between;
+      font-size: 0.75rem; color: var(--text2); margin-top: 6px;
+    }
+    .badge {
+      font-size: 0.66rem; font-weight: 700; padding: 2px 7px;
+      border-radius: 10px; text-transform: uppercase;
+    }
+    .badge-yolo   { background: linear-gradient(135deg,#ff4757,#ff6348); color:#fff; }
+    .badge-best   { background: var(--amber); color: #000; }
+    .badge-ml     { background: rgba(83,82,237,0.3); color: #a29bfe; border: 1px solid #5352ed44; }
 
-        .predictions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
+    /* Image preview */
+    .img-preview { text-align: center; margin-bottom: 20px; }
+    .img-preview img {
+      max-width: 100%; max-height: 380px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow); border: 1px solid var(--card-border);
+    }
 
-        .prediction-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
-        }
+    /* Alert banner */
+    .alert-banner {
+      padding: 12px 18px; border-radius: 10px;
+      font-size: 0.88rem; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .alert-success { background: rgba(46,213,115,0.12); border: 1px solid rgba(46,213,115,0.3); color: var(--green); }
+    .alert-error   { background: rgba(255,71,87,0.12);  border: 1px solid rgba(255,71,87,0.3);  color: var(--fire); }
+    .alert-info    { background: rgba(83,82,237,0.12);  border: 1px solid rgba(83,82,237,0.3);  color: #a29bfe; }
 
-        .prediction-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-        }
+    /* ══════════════════════════════════════════════
+       WEBCAM TAB
+    ══════════════════════════════════════════════ */
+    .webcam-wrap { text-align: center; }
+    .webcam-header { margin-bottom: 16px; }
+    .webcam-header h2 { font-size: 1.3rem; color: var(--fire); }
+    .webcam-header p  { font-size: 0.85rem; color: var(--text2); margin-top: 4px; }
 
-        .prediction-card.best {
-            border-color: #28a745;
-            background: linear-gradient(135deg, #f8fff8, #e8f5e8);
-        }
+    #live-stream {
+      width: 100%; max-width: 760px;
+      border-radius: var(--radius);
+      border: 2px solid var(--card-border);
+      background: #000; min-height: 400px;
+      box-shadow: var(--shadow);
+    }
 
-        .prediction-card.fire {
-            border-color: #ff6b6b;
-            background: linear-gradient(135deg, #fff5f5, #ffe8e8);
-        }
+    /* Fire confirmed overlay */
+    .fire-alert-bar {
+      display: none; margin: 16px auto; max-width: 760px;
+      padding: 14px 20px; border-radius: 10px;
+      background: linear-gradient(135deg, rgba(255,71,87,0.25), rgba(255,107,53,0.2));
+      border: 1px solid var(--fire);
+      color: var(--fire); font-weight: 700; font-size: 1rem;
+      text-align: center; animation: pulse-border 1s infinite;
+    }
+    .fire-alert-bar.active { display: block; }
+    @keyframes pulse-border {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,71,87,0.4); }
+      50%      { box-shadow: 0 0 0 8px rgba(255,71,87,0); }
+    }
 
-        .prediction-card.no-fire {
-            border-color: #4ecdc4;
-            background: linear-gradient(135deg, #f0fffd, #e8f5f5);
-        }
+    /* Webcam frame counter */
+    .frame-counter {
+      font-size: 0.78rem; color: var(--text2);
+      margin: 10px auto; text-align: center;
+    }
+    .frame-counter span { color: var(--amber); font-weight: 600; }
 
-        .model-name {
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #333;
-        }
+    /* ══════════════════════════════════════════════
+       HISTORY TAB
+    ══════════════════════════════════════════════ */
+    .filter-bar {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 18px; align-items: center;
+    }
+    .filter-bar select, .filter-bar input {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px;
+      padding: 8px 12px; font-size: 0.84rem; font-family: inherit;
+      cursor: pointer;
+    }
+    .filter-bar select:focus { outline: 1px solid var(--fire); }
+    .filter-bar label { font-size: 0.82rem; color: var(--text2); }
 
-        .prediction-result {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-align: center;
-        }
+    .history-table-wrap { overflow-x: auto; }
+    .history-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+    .history-table th {
+      padding: 10px 14px; text-align: left;
+      font-size: 0.75rem; color: var(--text2);
+      font-weight: 500; border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .history-table td {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .history-table tr:hover td { background: var(--card-hover); }
+    .history-table tr.fire-row td { background: rgba(255,71,87,0.05); }
 
-        .prediction-result.fire {
-            color: #ff6b6b;
-        }
+    .fire-badge    { background: var(--fire); color: #fff; padding: 3px 9px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; }
+    .nofire-badge  { background: rgba(46,213,115,0.2); color: var(--green); padding: 3px 9px; border-radius: 10px; font-size: 0.72rem; }
+    .source-badge  { background: var(--card); border: 1px solid var(--border); padding: 2px 8px; border-radius: 8px; font-size: 0.72rem; color: var(--text2); }
+    .model-name-small { font-size: 0.78rem; color: var(--text2); }
+    .conf-text { color: var(--amber); font-weight: 600; }
 
-        .prediction-result.no-fire {
-            color: #4ecdc4;
-        }
+    .no-data { text-align:center; padding: 60px 20px; color: var(--text2); }
+    .no-data-icon { font-size: 3rem; margin-bottom: 12px; }
 
-        .confidence-bar {
-            background: #e9ecef;
-            border-radius: 10px;
-            height: 20px;
-            margin: 10px 0;
-            overflow: hidden;
-        }
+    /* ══════════════════════════════════════════════
+       DASHBOARD TAB
+    ══════════════════════════════════════════════ */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px; margin-top: 20px;
+    }
+    .chart-card {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: 20px;
+    }
+    .chart-card h3 { font-size: 0.88rem; color: var(--text2); margin-bottom: 16px; font-weight: 500; }
+    .chart-wrap { position: relative; height: 220px; }
 
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #ee5a24);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
+    /* ══════════════════════════════════════════════
+       MODEL STATUS SECTION (top of upload tab)
+    ══════════════════════════════════════════════ */
+    .model-status-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 24px; align-items: center;
+    }
+    .model-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 0.8rem; font-weight: 500;
+      background: var(--card); border: 1px solid var(--border);
+    }
+    .model-chip.loaded { border-color: rgba(46,213,115,0.4); color: var(--green); }
+    .model-chip.yolo   { border-color: rgba(255,71,87,0.4); color: var(--fire); background: rgba(255,71,87,0.07); }
 
-        .confidence-fill.high {
-            background: linear-gradient(90deg, #28a745, #20c997);
-        }
+    /* ES connection pill */
+    .es-pill {
+      font-size: 0.75rem; padding: 4px 12px;
+      border-radius: 20px; font-weight: 500;
+    }
+    .es-pill.connected   { background: rgba(46,213,115,0.15); color: var(--green); border: 1px solid rgba(46,213,115,0.3); }
+    .es-pill.fallback    { background: rgba(255,165,2,0.15);  color: var(--amber); border: 1px solid rgba(255,165,2,0.3); }
 
-        .confidence-fill.medium {
-            background: linear-gradient(90deg, #ffc107, #fd7e14);
-        }
-
-        .confidence-fill.low {
-            background: linear-gradient(90deg, #ff6b6b, #ee5a24);
-        }
-
-        .probability-info {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #ff6b6b;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .models-info {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .models-info h3 {
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        .models-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .model-tag {
-            background: #ff6b6b;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
-        }
-
-        .model-tag.yolo {
-            background: linear-gradient(135deg, #FF4757, #FF6348);
-            font-weight: bold;
-            padding: 7px 20px;
-            box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
-        }
-
-        .model-tag.ml {
-            background: linear-gradient(135deg, #778BEB, #546DE5);
-        }
-
-        .model-comparison {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        .model-category {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            border: 2px solid #e9ecef;
-        }
-
-        .model-category h4 {
-            color: #333;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .model-category ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .model-category li {
-            padding: 5px 0;
-            color: #666;
-        }
-
-        .yolo-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #FF4757, #FF6348);
-            color: white;
-            padding: 3px 10px;
-            border-radius: 15px;
-            font-size: 0.7em;
-            font-weight: bold;
-            margin-left: 5px;
-            box-shadow: 0 2px 5px rgba(255, 71, 87, 0.3);
-        }
-
-        .deep-learning-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #FF4757, #FF6348);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: bold;
-            margin-left: 8px;
-        }
-
-        .error-message {
-            background: #ffe8e8;
-            color: #dc3545;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border-left: 5px solid #dc3545;
-        }
-
-        .success-message {
-            background: #e8f5e8;
-            color: #28a745;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border-left: 5px solid #28a745;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            .main-content {
-                padding: 20px;
-            }
-
-            .predictions-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    /* ══════════════════════════════════════════════
+       RESPONSIVE — mobile
+    ══════════════════════════════════════════════ */
+    @media (max-width: 720px) {
+      body { flex-direction: column; }
+      .sidebar {
+        width: 100%; flex-direction: row; min-width: unset;
+        padding: 10px 14px; border-right: none;
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+      }
+      .logo { display: none; }
+      .sidebar-spacer, .sidebar-footer { display: none; }
+      .nav-btn { padding: 8px 12px; white-space: nowrap; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .main { overflow: auto; }
+      .content { padding: 16px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔥 Fire Detection</h1>
-            <p>Hệ thống cảnh báo cháy thông minh sử dụng AI & Deep Learning</p>
-        </div>
 
-        <div class="main-content">
-            <!-- Models Status -->
-            <div class="models-info">
-                <h3>📊 Trạng thái Models</h3>
-                <div id="modelsStatus">Đang kiểm tra...</div>
-                
-                <!-- Model Comparison Info -->
-                <div class="model-comparison">
-                    <div class="model-category" style="border-color: #FF4757;">
-                        <h4>
-                            🔥 YOLO (Deep Learning)
-                            <span class="deep-learning-badge">NEW!</span>
-                        </h4>
-                        <ul>
-                            <li>✅ YOLOv8 Classification</li>
-                            <li>✅ Tự động học features</li>
-                            <li>✅ Accuracy cao (85-95%)</li>
-                            <li>⚡ 2.7M parameters</li>
-                        </ul>
-                    </div>
-                    <div class="model-category" style="border-color: #778BEB;">
-                        <h4>🤖 ML Truyền Thống</h4>
-                        <ul>
-                            <li>• KNN, SVM, Decision Tree</li>
-                            <li>• Logistic Regression, Random Forest</li>
-                            <li>• 714 hand-crafted features</li>
-                            <li>• Nhanh, dễ giải thích</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+<!-- ══════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="logo">
+    <span class="logo-icon">🔥</span>
+    FireGuard AI
+  </div>
 
-            <ul class="nav-tabs">
-                <li class="active" onclick="switchTab('tab-upload', this)">📸 Phân Tích Ảnh Tĩnh</li>
-                <li onclick="switchTab('tab-webcam', this)">🔴 Live Stream Webcam</li>
-            </ul>
+  <button class="nav-btn active" onclick="switchTab('tab-upload', this)" id="nav-upload">
+    <span class="nav-icon">📸</span> Phân Tích Ảnh
+  </button>
+  <button class="nav-btn" onclick="switchTab('tab-webcam', this)" id="nav-webcam">
+    <span class="nav-icon">🎥</span> Live Camera
+  </button>
+  <button class="nav-btn" onclick="switchTab('tab-history', this)" id="nav-history">
+    <span class="nav-icon">📋</span> Lịch Sử
+  </button>
+  <button class="nav-btn" onclick="switchTab('tab-dashboard', this)" id="nav-dashboard">
+    <span class="nav-icon">📊</span> Dashboard
+  </button>
 
-            <!-- Upload Section -->
-            <div id="tab-upload" class="tab-content active">
-            <div class="upload-section" id="uploadSection">
-                <div class="upload-icon">📸</div>
-                <h2>Upload ảnh để phân tích</h2>
-                <p>Kéo thả ảnh vào đây hoặc click để chọn file</p>
-                <input type="file" id="fileInput" class="file-input" accept="image/*">
-                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-                    Chọn ảnh
-                </button>
-                <button class="upload-btn" onclick="loadLatestModels()">
-                    Load Models Mới Nhất
-                </button>
-            </div>
+  <div class="sidebar-spacer"></div>
 
-            <!-- Loading -->
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <h3>Đang phân tích ảnh...</h3>
-                <p>Vui lòng chờ trong giây lát</p>
-            </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-info" id="sidebarInfo">
+      <div><span class="status-dot" id="modelDot"></span><span id="modelCount">Đang kiểm tra...</span></div>
+      <div style="margin-top:4px"><span class="status-dot warn" id="esDot"></span><span id="esStatus">ES: kiểm tra...</span></div>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">🌙 Chuyển giao diện</button>
+  </div>
+</aside>
 
-            <!-- Results Section -->
-            <div class="results-section" id="resultsSection">
-                <div class="image-preview">
-                    <img id="previewImage" src="" alt="Uploaded image">
-                </div>
+<!-- ══════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════ -->
+<div class="main">
 
-                <div class="predictions-grid" id="predictionsGrid">
-                    <!-- Predictions will be inserted here -->
-                </div>
-            </div>
-        </div>
-        </div>
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="topbar-title" id="topbarTitle">📸 Phân Tích Ảnh</span>
+    <div class="topbar-spacer"></div>
 
-        <div id="tab-webcam" class="tab-content">
-                <div class="webcam-container">
-                    <h2 style="color: #ff4757;">🔴 YOLOv8 Real-time Detection</h2>
-                    <p style="margin-top: 10px; color: #666;">Camera sẽ tự động bật khi bạn mở Tab này.</p>
-
-                    <img id="live-stream" src="" alt="Đang chờ kết nối Camera...">
-                </div>
-                <div class="results-section" id="webcamResultsSection" style="display: block; margin-top: 30px;">
-                    <h3 style="text-align: center; margin-bottom: 20px;">📊 Phân tích Real-time từ 6 Models</h3>
-                    <div class="predictions-grid" id="webcamPredictionsGrid">
-                        </div>
-                </div>
-        </div>
-
+    <!-- Threshold slider -->
+    <div class="threshold-widget">
+      <span style="font-size:.8rem">Ngưỡng:</span>
+      <input type="range" id="thresholdSlider" min="0.10" max="0.95" step="0.01" value="0.55"
+             oninput="updateThreshold(this.value)">
+      <span class="threshold-val" id="thresholdVal">0.55</span>
     </div>
 
-    <script>
-        // Global variables
-        let modelsLoaded = false;
+    <div class="topbar-badge" id="fireStatusBadge">
+      <span class="status-dot" id="fireStatusDot"></span>
+      <span id="fireStatusText">Bình thường</span>
+    </div>
+  </div>
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            checkModelsStatus();
-            setupDragAndDrop();
-            setupFileInput();
-        });
+  <!-- Content -->
+  <div class="content">
 
-        let fireCheckInterval = null; // Biến quản lý vòng lặp hỏi server
-        let isSpeaking = false;       // Cờ chống việc đọc đè âm thanh lên nhau
+    <!-- ════════════════════════════════
+         TAB 1: UPLOAD
+    ════════════════════════════════ -->
+    <div class="tab-panel active" id="tab-upload">
 
-        // Hàm gọi Web Speech API đọc tiếng Việt
-        function speakWarning() {
-            if (isSpeaking) return; // Đang đọc thì không đọc đè thêm
+      <!-- Model status chips -->
+      <div class="model-status-row" id="modelStatusRow">
+        <span style="font-size:.82rem;color:var(--text2)">Models:</span>
+        <span style="font-size:.82rem;color:var(--text2);padding:4px">Đang tải...</span>
+      </div>
 
-            let msg = new SpeechSynthesisUtterance("Cảnh báo, phát hiện có cháy!");
-            msg.lang = "vi-VN"; // Setup giọng Tiếng Việt
-            msg.rate = 1.1;     // Tốc độ đọc nhanh hơn 1 tí cho kịch tính
+      <!-- Alert banner -->
+      <div id="uploadAlert" style="display:none"></div>
 
-            msg.onstart = () => {
-                isSpeaking = true;
-            };
-            msg.onend = () => {
-                isSpeaking = false;
-            };
+      <!-- Upload zone -->
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <span class="upload-icon">🖼️</span>
+        <h2>Kéo thả hoặc click để chọn ảnh</h2>
+        <p>Hỗ trợ JPG, PNG, JPEG — Tối đa 16 MB</p>
+        <div class="btn-row">
+          <button class="btn btn-fire" onclick="event.stopPropagation();document.getElementById('fileInput').click()">
+            📂 Chọn Ảnh
+          </button>
+          <button class="btn btn-outline" onclick="event.stopPropagation();loadLatestModels()">
+            🔄 Load Models
+          </button>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
 
-            window.speechSynthesis.speak(msg);
-        }
+      <!-- Loading -->
+      <div class="spinner-wrap" id="loadingSpinner">
+        <div class="spinner"></div>
+        <p style="color:var(--text2)">Đang phân tích ảnh...</p>
+      </div>
 
-        // Hàm liên tục gọi API hỏi Server xem Camera có đang bắt được lửa không
-        function checkFireState() {
-            fetch('/get_fire_status')
-                    .then(res => res.json())
-                    .then(data => {
-                        // 1. Kích hoạt còi báo cháy
-                        if (data.is_fire) {
-                            speakWarning();
-                        }
+      <!-- Results -->
+      <div id="uploadResults" style="display:none">
+        <div class="img-preview"><img id="previewImg" src="" alt="preview"></div>
+        <div class="predictions-grid" id="predictionsGrid"></div>
+      </div>
+    </div>
 
-                        // 2. Vẽ 6 cái thẻ Models y như lúc Upload ảnh
-                        if (data.predictions) {
-                            const grid = document.getElementById('webcamPredictionsGrid');
-                            grid.innerHTML = ''; // Xóa bài cũ
+    <!-- ════════════════════════════════
+         TAB 2: WEBCAM
+    ════════════════════════════════ -->
+    <div class="tab-panel" id="tab-webcam">
+      <div class="webcam-wrap">
+        <div class="webcam-header">
+          <h2>🎥 YOLOv8 Real-time Detection</h2>
+          <p>Camera tự động bật khi mở tab. Phân tích frame liên tục.</p>
+        </div>
 
-                            Object.entries(data.predictions).forEach(([modelName, prediction]) => {
-                                const isBest = modelName === data.best_model?.name;
-                                const isFire = prediction.prediction === 'FIRE';
-                                const isYolo = modelName.toUpperCase() === 'YOLO';
+        <div class="fire-alert-bar" id="fireAlertBar">
+          🔥 CẢNH BÁO CHÁY! — Đã xác nhận qua nhiều frame liên tiếp
+        </div>
 
-                                const card = document.createElement('div');
-                                card.className = `prediction-card ${isBest ? 'best' : ''} ${isFire ? 'fire' : 'no-fire'}`;
-                                const confidenceClass = prediction.confidence > 0.8 ? 'high' : prediction.confidence > 0.6 ? 'medium' : 'low';
-                                const modelNameHtml = isYolo ? `${modelName}<span class="yolo-badge">DEEP LEARNING</span>` : modelName;
+        <div class="frame-counter" id="frameCounter" style="display:none">
+          Frame count: <span id="frameCount">0</span> / <span id="frameThreshold">5</span>
+        </div>
 
-                                card.innerHTML = `
-                                        <div class="model-name">${modelNameHtml}</div>
-                                        <div class="prediction-result ${isFire ? 'fire' : 'no-fire'}">${prediction.prediction}</div>
-                                        <div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${prediction.confidence * 100}%"></div></div>
-                                        <div class="probability-info">
-                                            <span>P(Fire): ${(prediction.probability_fire * 100).toFixed(1)}%</span>
-                                            <span>P(No Fire): ${(prediction.probability_no_fire * 100).toFixed(1)}%</span>
-                                        </div>
-                                        <div style="text-align: center; margin-top: 10px; font-weight: bold; color: #666;">
-                                            Confidence: ${(prediction.confidence * 100).toFixed(1)}%
-                                        </div>
-                                        ${isBest ? '<div style="text-align: center; margin-top: 10px; color: #28a745; font-weight: bold;">🏆 Best Model</div>' : ''}
-                                    `;
-                                grid.appendChild(card);
-                            });
-                        }
-                    })
-                    .catch(e => console.log("Lỗi check API:", e));
-        }
-        function switchTab(tabId, element) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.nav-tabs li').forEach(li => li.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            element.classList.add('active');
+        <img id="live-stream" src="" alt="Camera stream">
+      </div>
 
-            const imgTag = document.getElementById('live-stream');
-            if (tabId === 'tab-webcam') {
-                imgTag.src = "{{ url_for('video_feed') }}";
-                // Khi mở Camera -> Bắt đầu vòng lặp hỏi Server 1 giây 1 lần
-                fireCheckInterval = setInterval(checkFireState, 1000);
-            } else {
-                imgTag.src = "";
-                // Khi tắt Camera -> Tắt vòng lặp hỏi Server & Bịt miệng "Chị Google" nếu đang đọc dở
-                if (fireCheckInterval) clearInterval(fireCheckInterval);
-                window.speechSynthesis.cancel();
-                isSpeaking = false;
-            }
-        }
+      <div style="margin-top:24px">
+        <h3 style="font-size:.9rem;color:var(--text2);margin-bottom:14px">📊 Phân tích từ 6 Models (cập nhật mỗi giây)</h3>
+        <div class="predictions-grid" id="webcamPredictionsGrid"></div>
+      </div>
+    </div>
 
-        // Check models status
-        async function checkModelsStatus() {
-            try {
-                const response = await fetch('/train-status');
-                const data = await response.json();
-                
-                const statusDiv = document.getElementById('modelsStatus');
-                
-                if (data.status === 'models_available') {
-                    // Create model tags with distinction between YOLO and ML models
-                    let modelTags = '';
-                    if (data.models_loaded && data.model_names && data.model_names.length > 0) {
-                        modelTags = data.model_names.map(name => {
-                            const isYolo = name.toUpperCase() === 'YOLO';
-                            const tagClass = isYolo ? 'model-tag yolo' : 'model-tag ml';
-                            const icon = isYolo ? '🔥' : '🤖';
-                            return `<span class="${tagClass}">${icon} ${name}</span>`;
-                        }).join(' ');
-                    }
-                    
-                    const modelsLoadedText = data.models_loaded ? 
-                        `<br><br><div class="models-list">${modelTags}</div>` : 
-                        '<br>Chưa có models nào được load';
-                    
-                    statusDiv.innerHTML = `
-                        <div class="success-message">
-                            ✅ Models có sẵn: ${data.available_timestamps.length} phiên bản
-                            <br>📅 Mới nhất: ${data.latest_timestamp}
-                            <br>🔄 Models đã load: ${data.num_models_loaded} models
-                            ${modelsLoadedText}
-                        </div>
-                    `;
-                    modelsLoaded = data.models_loaded;
-                } else {
-                    statusDiv.innerHTML = `
-                        <div class="error-message">
-                            ❌ ${data.message}
-                            <br>Vui lòng train models trước khi sử dụng
-                        </div>
-                    `;
-                    modelsLoaded = false;
-                }
-            } catch (error) {
-                document.getElementById('modelsStatus').innerHTML = `
-                    <div class="error-message">
-                        ❌ Lỗi khi kiểm tra trạng thái models
-                    </div>
-                `;
-            }
-        }
+    <!-- ════════════════════════════════
+         TAB 3: HISTORY
+    ════════════════════════════════ -->
+    <div class="tab-panel" id="tab-history">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h2 style="font-size:1.1rem">📋 Lịch Sử Phát Hiện</h2>
+        <span id="esSourceBadge" class="es-pill fallback">📁 JSON file</span>
+      </div>
 
-        // Load latest models
-        async function loadLatestModels() {
-            try {
-                const response = await fetch('/load-models', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ timestamp: 'latest' })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showMessage('success', '✅ Đã load models thành công!');
-                    modelsLoaded = true;
-                    checkModelsStatus();
-                } else {
-                    showMessage('error', '❌ ' + data.error);
-                }
-            } catch (error) {
-                showMessage('error', '❌ Lỗi khi load models');
-            }
-        }
+      <div class="filter-bar">
+        <label>Nguồn:</label>
+        <select id="filterSource">
+          <option value="">Tất cả</option>
+          <option value="upload">Upload ảnh</option>
+          <option value="webcam">Webcam</option>
+        </select>
 
-        // Setup drag and drop
-        function setupDragAndDrop() {
-            const uploadSection = document.getElementById('uploadSection');
-            
-            uploadSection.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                uploadSection.classList.add('dragover');
-            });
-            
-            uploadSection.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                uploadSection.classList.remove('dragover');
-            });
-            
-            uploadSection.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadSection.classList.remove('dragover');
-                
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    handleFile(files[0]);
-                }
-            });
-        }
+        <label>Trạng thái:</label>
+        <select id="filterFire">
+          <option value="">Tất cả</option>
+          <option value="true">🔥 Có lửa</option>
+          <option value="false">✅ Không lửa</option>
+        </select>
 
-        // Setup file input
-        function setupFileInput() {
-            const fileInput = document.getElementById('fileInput');
-            fileInput.addEventListener('change', function(e) {
-                if (e.target.files.length > 0) {
-                    handleFile(e.target.files[0]);
-                }
-            });
-        }
+        <label>Trong:</label>
+        <select id="filterHours">
+          <option value="1">1 giờ</option>
+          <option value="6">6 giờ</option>
+          <option value="24" selected>24 giờ</option>
+          <option value="72">3 ngày</option>
+          <option value="168">7 ngày</option>
+        </select>
 
-        // Handle file upload
-        async function handleFile(file) {
-            if (!file.type.startsWith('image/')) {
-                showMessage('error', '❌ Vui lòng chọn file ảnh');
-                return;
-            }
+        <button class="btn btn-fire" onclick="loadHistory()" style="padding:8px 16px;font-size:.82rem">
+          🔍 Lọc
+        </button>
+        <button class="btn btn-outline" onclick="loadHistory()" style="padding:8px 14px;font-size:.82rem">
+          🔄 Làm mới
+        </button>
+      </div>
 
-            if (!modelsLoaded) {
-                showMessage('error', '❌ Chưa có models nào được load. Vui lòng load models trước.');
-                return;
-            }
+      <div id="historyContent">
+        <div class="no-data">
+          <div class="no-data-icon">📭</div>
+          <p>Chưa có dữ liệu. Nhấn <strong>Lọc</strong> để tải.</p>
+        </div>
+      </div>
+    </div>
 
-            const formData = new FormData();
-            formData.append('file', file);
+    <!-- ════════════════════════════════
+         TAB 4: DASHBOARD
+    ════════════════════════════════ -->
+    <div class="tab-panel" id="tab-dashboard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h2 style="font-size:1.1rem">📊 Thống Kê Tổng Quan</h2>
+        <select id="dashHours" onchange="loadDashboard()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:.82rem">
+          <option value="1">1 giờ qua</option>
+          <option value="6">6 giờ qua</option>
+          <option value="24" selected>24 giờ qua</option>
+          <option value="72">3 ngày qua</option>
+        </select>
+      </div>
 
-            showLoading(true);
+      <!-- Stats cards -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-val" id="statTotal">—</div><div class="stat-label">Tổng sự kiện</div></div>
+        <div class="stat-card fire-stat"><div class="stat-val" id="statFire">—</div><div class="stat-label">🔥 Phát hiện cháy</div></div>
+        <div class="stat-card green-stat"><div class="stat-val" id="statNoFire">—</div><div class="stat-label">✅ Bình thường</div></div>
+        <div class="stat-card amber-stat"><div class="stat-val" id="statRate">—</div><div class="stat-label">Tỷ lệ cháy</div></div>
+        <div class="stat-card"><div class="stat-val" id="statConf">—</div><div class="stat-label">Confidence TB</div></div>
+      </div>
 
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>📈 Sự kiện theo giờ</h3>
+          <div class="chart-wrap"><canvas id="timelineChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>🤖 Model phán quyết</h3>
+          <div class="chart-wrap"><canvas id="modelChart"></canvas></div>
+        </div>
+      </div>
 
-                const data = await response.json();
+      <div class="charts-grid" style="margin-top:20px">
+        <div class="chart-card">
+          <h3>📡 Nguồn phát hiện</h3>
+          <div class="chart-wrap"><canvas id="sourceChart"></canvas></div>
+        </div>
+        <div class="chart-card" style="display:flex;flex-direction:column;justify-content:center;align-items:center">
+          <h3 style="margin-bottom:20px">🔥 Tỷ lệ Cháy / Bình Thường</h3>
+          <div style="width:180px;height:180px"><canvas id="fireRateChart"></canvas></div>
+        </div>
+      </div>
+    </div>
 
-                if (data.success) {
-                    showResults(data);
-                } else {
-                    showMessage('error', '❌ ' + data.error);
-                }
-            } catch (error) {
-                showMessage('error', '❌ Lỗi khi upload file');
-            } finally {
-                showLoading(false);
-            }
-        }
+  </div><!-- /content -->
+</div><!-- /main -->
 
-        // Show loading
-        function showLoading(show) {
-            const loading = document.getElementById('loading');
-            const uploadSection = document.getElementById('uploadSection');
-            const resultsSection = document.getElementById('resultsSection');
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════ -->
+<script>
+// ── Global state ─────────────────────────────────────────
+let modelsLoaded   = false;
+let webcamInterval = null;
+let isSpeaking     = false;
+let chartInstances = {};
 
-            if (show) {
-                loading.style.display = 'block';
-                uploadSection.style.display = 'none';
-                resultsSection.style.display = 'none';
-            } else {
-                loading.style.display = 'none';
-                uploadSection.style.display = 'block';
-            }
-        }
+// ── Init ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  checkSystemStatus();
+  setupUploadZone();
+  document.getElementById('fileInput').addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+  loadThresholdFromServer();
+});
 
-        // Show results
-        function showResults(data) {
-            const resultsSection = document.getElementById('resultsSection');
-            const predictionsGrid = document.getElementById('predictionsGrid');
-            const previewImage = document.getElementById('previewImage');
+// ══════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════
+function toggleTheme() {
+  const html = document.documentElement;
+  const dark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', dark ? 'light' : 'dark');
+  document.querySelector('.theme-btn').textContent = dark ? '🌙 Giao diện tối' : '☀️ Giao diện sáng';
+  // Rebuild charts for new theme colors
+  if (Object.keys(chartInstances).length) loadDashboard();
+}
 
-            // Set image
-            previewImage.src = 'data:image/jpeg;base64,' + data.image;
+// ══════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════
+const tabTitles = {
+  'tab-upload':    '📸 Phân Tích Ảnh',
+  'tab-webcam':    '🎥 Live Camera',
+  'tab-history':   '📋 Lịch Sử Phát Hiện',
+  'tab-dashboard': '📊 Dashboard Thống Kê',
+};
 
-            // Clear previous predictions
-            predictionsGrid.innerHTML = '';
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('topbarTitle').textContent = tabTitles[tabId] || '';
 
-            // Add predictions
-            Object.entries(data.predictions).forEach(([modelName, prediction]) => {
-                const isBest = modelName === data.best_model.name;
-                const isFire = prediction.prediction === 'FIRE';
-                const isYolo = modelName.toUpperCase() === 'YOLO';
-                
-                const card = document.createElement('div');
-                card.className = `prediction-card ${isBest ? 'best' : ''} ${isFire ? 'fire' : 'no-fire'}`;
-                
-                const confidenceClass = prediction.confidence > 0.8 ? 'high' : 
-                                      prediction.confidence > 0.6 ? 'medium' : 'low';
+  const stream = document.getElementById('live-stream');
+  if (tabId === 'tab-webcam') {
+    stream.src = "{{ url_for('video_feed') }}";
+    webcamInterval = setInterval(checkFireState, 1000);
+    document.getElementById('frameCounter').style.display = 'block';
+  } else {
+    stream.src = '';
+    if (webcamInterval) { clearInterval(webcamInterval); webcamInterval = null; }
+    window.speechSynthesis?.cancel();
+    isSpeaking = false;
+    document.getElementById('frameCounter').style.display = 'none';
+    document.getElementById('fireAlertBar').classList.remove('active');
+    document.getElementById('webcamPredictionsGrid').innerHTML = '';
+  }
 
-                // Create model name with badge
-                const modelNameHtml = isYolo ? 
-                    `${modelName}<span class="yolo-badge">DEEP LEARNING</span>` : 
-                    modelName;
+  if (tabId === 'tab-history')   loadHistory();
+  if (tabId === 'tab-dashboard') loadDashboard();
+}
 
-                card.innerHTML = `
-                    <div class="model-name">${modelNameHtml}</div>
-                    <div class="prediction-result ${isFire ? 'fire' : 'no-fire'}">
-                        ${prediction.prediction}
-                    </div>
-                    <div class="confidence-bar">
-                        <div class="confidence-fill ${confidenceClass}" style="width: ${prediction.confidence * 100}%"></div>
-                    </div>
-                    <div class="probability-info">
-                        <span>P(Fire): ${(prediction.probability_fire * 100).toFixed(1)}%</span>
-                        <span>P(No Fire): ${(prediction.probability_no_fire * 100).toFixed(1)}%</span>
-                    </div>
-                    <div style="text-align: center; margin-top: 10px; font-weight: bold; color: #666;">
-                        Confidence: ${(prediction.confidence * 100).toFixed(1)}%
-                    </div>
-                    ${isBest ? '<div style="text-align: center; margin-top: 10px; color: #28a745; font-weight: bold;">🏆 Best Model</div>' : ''}
-                `;
+// ══════════════════════════════════════════════
+// SYSTEM STATUS
+// ══════════════════════════════════════════════
+async function checkSystemStatus() {
+  try {
+    const [healthRes, configRes] = await Promise.all([
+      fetch('/health').then(r => r.json()),
+      fetch('/config').then(r => r.json()),
+    ]);
 
-                predictionsGrid.appendChild(card);
-            });
+    modelsLoaded = healthRes.models_loaded;
 
-            resultsSection.style.display = 'block';
-        }
+    // Model chips
+    const row = document.getElementById('modelStatusRow');
+    row.innerHTML = '<span style="font-size:.82rem;color:var(--text2)">Models:</span>';
+    (healthRes.model_names || []).forEach(name => {
+      const chip = document.createElement('span');
+      chip.className = `model-chip loaded ${name === 'YOLO' ? 'yolo' : ''}`;
+      chip.innerHTML = `<span>✓</span> ${name}`;
+      row.appendChild(chip);
+    });
+    if (!healthRes.models_loaded) {
+      row.innerHTML += '<span style="color:var(--fire);font-size:.82rem">⚠️ Chưa có models — nhấn Load Models</span>';
+    }
 
-        // Show message
-        function showMessage(type, message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
-            messageDiv.textContent = message;
+    // Sidebar info
+    const dot = document.getElementById('modelDot');
+    dot.className = 'status-dot' + (healthRes.models_loaded ? '' : ' offline');
+    document.getElementById('modelCount').textContent =
+      `${healthRes.num_models} models loaded`;
 
-            const mainContent = document.querySelector('.main-content');
-            mainContent.insertBefore(messageDiv, mainContent.firstChild);
+    // ES status
+    const esDot = document.getElementById('esDot');
+    const esStatusEl = document.getElementById('esStatus');
+    if (healthRes.es_connected) {
+      esDot.className = 'status-dot';
+      esStatusEl.textContent = 'ES: Connected ✓';
+    } else {
+      esDot.className = 'status-dot warn';
+      esStatusEl.textContent = 'ES: JSON fallback';
+    }
 
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 5000);
-        }
-    </script>
+    // Threshold
+    const tv = configRes.fire_threshold || 0.55;
+    document.getElementById('thresholdSlider').value = tv;
+    document.getElementById('thresholdVal').textContent = tv.toFixed(2);
+
+  } catch (e) {
+    document.getElementById('modelCount').textContent = 'Lỗi kết nối';
+  }
+}
+
+// ══════════════════════════════════════════════
+// THRESHOLD SLIDER
+// ══════════════════════════════════════════════
+let thresholdDebounce;
+function updateThreshold(val) {
+  document.getElementById('thresholdVal').textContent = parseFloat(val).toFixed(2);
+  clearTimeout(thresholdDebounce);
+  thresholdDebounce = setTimeout(() => applyThreshold(val), 600);
+}
+async function applyThreshold(val) {
+  try {
+    await fetch('/config', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({fire_threshold: parseFloat(val)}),
+    });
+  } catch (e) { console.warn('Threshold update failed', e); }
+}
+async function loadThresholdFromServer() {
+  try {
+    const cfg = await fetch('/config').then(r => r.json());
+    const v = cfg.fire_threshold || 0.55;
+    document.getElementById('thresholdSlider').value = v;
+    document.getElementById('thresholdVal').textContent = v.toFixed(2);
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════
+// UPLOAD
+// ══════════════════════════════════════════════
+function setupUploadZone() {
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+}
+
+async function handleFile(file) {
+  if (!file.type.startsWith('image/')) { showAlert('error', '❌ Chỉ hỗ trợ file ảnh'); return; }
+  if (!modelsLoaded) { showAlert('error', '❌ Chưa load models — nhấn "Load Models"'); return; }
+
+  document.getElementById('loadingSpinner').style.display = 'block';
+  document.getElementById('uploadResults').style.display  = 'none';
+  document.getElementById('uploadAlert').style.display    = 'none';
+
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const data = await fetch('/upload', {method:'POST', body:form}).then(r => r.json());
+    document.getElementById('loadingSpinner').style.display = 'none';
+    if (data.success) {
+      renderPredictions(data);
+    } else {
+      showAlert('error', '❌ ' + data.error);
+    }
+  } catch (e) {
+    document.getElementById('loadingSpinner').style.display = 'none';
+    showAlert('error', '❌ Lỗi kết nối server');
+  }
+}
+
+function renderPredictions(data) {
+  document.getElementById('previewImg').src = 'data:image/jpeg;base64,' + data.image;
+  const grid = document.getElementById('predictionsGrid');
+  grid.innerHTML = '';
+
+  Object.entries(data.predictions).forEach(([name, pred]) => {
+    const isFire = pred.prediction === 'FIRE';
+    const isBest = name === data.best_model?.name;
+    const isYolo = name.toUpperCase() === 'YOLO';
+    const conf   = (pred.confidence * 100).toFixed(1);
+    const pfire  = (pred.probability_fire * 100).toFixed(1);
+    const pnofire= (pred.probability_no_fire * 100).toFixed(1);
+
+    const card = document.createElement('div');
+    card.className = `pred-card ${isFire ? 'is-fire' : 'no-fire'} ${isBest ? 'is-best' : ''}`;
+    card.innerHTML = `
+      <div class="pred-name">
+        ${name}
+        ${isYolo ? '<span class="badge badge-yolo">DEEP LEARNING</span>' : '<span class="badge badge-ml">ML</span>'}
+        ${isBest ? '<span class="badge badge-best">🏆 Tốt nhất</span>' : ''}
+      </div>
+      <div class="pred-result ${isFire ? 'fire' : 'nofire'}">
+        ${isFire ? '🔥 CÓ LỬA' : '✅ BÌNH THƯỜNG'}
+      </div>
+      <div class="conf-bar-wrap">
+        <div class="conf-bar ${isFire ? '' : 'safe'}" style="width:${conf}%"></div>
+      </div>
+      <div class="pred-probs">
+        <span>P(Fire): <strong style="color:var(--fire)">${pfire}%</strong></span>
+        <span>P(Safe): <strong style="color:var(--green)">${pnofire}%</strong></span>
+      </div>
+      <div style="text-align:center;margin-top:8px;font-size:.78rem;color:var(--text2)">
+        Confidence: <strong style="color:var(--amber)">${conf}%</strong>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  document.getElementById('uploadResults').style.display = 'block';
+  const isFireResult = data.best_model?.prediction === 'FIRE';
+  showAlert(isFireResult ? 'error' : 'success',
+    isFireResult
+      ? `🔥 Phát hiện LỬA! Model tốt nhất: ${data.best_model.name} (${(data.best_model.confidence*100).toFixed(1)}%)`
+      : `✅ Không phát hiện lửa. Model: ${data.best_model?.name}`
+  );
+}
+
+async function loadLatestModels() {
+  try {
+    const data = await fetch('/load-models', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({timestamp:'latest'}),
+    }).then(r => r.json());
+    if (data.success) {
+      modelsLoaded = true;
+      showAlert('success', '✅ Đã load ' + data.models.join(', '));
+      checkSystemStatus();
+    } else {
+      showAlert('error', '❌ ' + data.error);
+    }
+  } catch(e) { showAlert('error', '❌ Lỗi kết nối'); }
+}
+
+function showAlert(type, msg) {
+  const el = document.getElementById('uploadAlert');
+  el.className = `alert-banner alert-${type === 'error' ? 'error' : type === 'success' ? 'success' : 'info'}`;
+  el.textContent = msg;
+  el.style.display = 'flex';
+}
+
+// ══════════════════════════════════════════════
+// WEBCAM / FIRE STATE
+// ══════════════════════════════════════════════
+function speakWarning() {
+  if (isSpeaking || !window.speechSynthesis) return;
+  const msg = new SpeechSynthesisUtterance('Cảnh báo, phát hiện có cháy!');
+  msg.lang = 'vi-VN'; msg.rate = 1.1;
+  msg.onstart = () => isSpeaking = true;
+  msg.onend   = () => isSpeaking = false;
+  window.speechSynthesis.speak(msg);
+}
+
+async function checkFireState() {
+  try {
+    const data = await fetch('/get_fire_status').then(r => r.json());
+
+    // Frame counter
+    document.getElementById('frameCount').textContent     = data.fire_frame_count || 0;
+    document.getElementById('frameThreshold').textContent = data.threshold || 5;
+
+    // Fire alert bar
+    const alertBar = document.getElementById('fireAlertBar');
+    if (data.is_confirmed) {
+      alertBar.classList.add('active');
+      speakWarning();
+      document.getElementById('fireStatusDot').className = 'status-dot offline';
+      document.getElementById('fireStatusText').textContent = '🔥 LỬA XÁC NHẬN';
+    } else if (data.is_fire) {
+      alertBar.classList.remove('active');
+      document.getElementById('fireStatusDot').className = 'status-dot warn';
+      document.getElementById('fireStatusText').textContent = `Detecting... [${data.fire_frame_count}/${data.threshold}]`;
+    } else {
+      alertBar.classList.remove('active');
+      document.getElementById('fireStatusDot').className = 'status-dot';
+      document.getElementById('fireStatusText').textContent = 'Bình thường';
+    }
+
+    // Webcam predictions grid
+    if (data.predictions) {
+      const grid = document.getElementById('webcamPredictionsGrid');
+      grid.innerHTML = '';
+      Object.entries(data.predictions).forEach(([name, pred]) => {
+        const isFire = pred.prediction === 'FIRE';
+        const isBest = name === data.best_model?.name;
+        const isYolo = name.toUpperCase() === 'YOLO';
+        const conf   = (pred.confidence * 100).toFixed(1);
+
+        const card = document.createElement('div');
+        card.className = `pred-card ${isFire ? 'is-fire' : 'no-fire'} ${isBest ? 'is-best' : ''}`;
+        card.innerHTML = `
+          <div class="pred-name">
+            ${name}
+            ${isYolo ? '<span class="badge badge-yolo">YOLO</span>' : '<span class="badge badge-ml">ML</span>'}
+            ${isBest ? '<span class="badge badge-best">🏆</span>' : ''}
+          </div>
+          <div class="pred-result ${isFire ? 'fire' : 'nofire'}">
+            ${isFire ? '🔥 CÓ LỬA' : '✅ AN TOÀN'}
+          </div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar ${isFire ? '' : 'safe'}" style="width:${conf}%"></div>
+          </div>
+          <div class="pred-probs">
+            <span>P(Fire): ${(pred.probability_fire*100).toFixed(1)}%</span>
+            <span>Conf: <strong class="conf-text">${conf}%</strong></span>
+          </div>`;
+        grid.appendChild(card);
+      });
+    }
+  } catch(e) { console.warn('Fire status check failed', e); }
+}
+
+// ══════════════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════════════
+async function loadHistory() {
+  const source  = document.getElementById('filterSource').value;
+  const isFire  = document.getElementById('filterFire').value;
+  const hours   = document.getElementById('filterHours').value;
+
+  let url = `/history?limit=50&hours=${hours}`;
+  if (source) url += `&source=${source}`;
+  if (isFire !== '') url += `&is_fire=${isFire}`;
+
+  document.getElementById('historyContent').innerHTML =
+    '<div class="no-data"><div class="spinner" style="margin:40px auto"></div></div>';
+
+  try {
+    const data = await fetch(url).then(r => r.json());
+
+    // Update ES badge
+    const badge = document.getElementById('esSourceBadge');
+    badge.textContent = data.data_source === 'elasticsearch'
+      ? '⚡ Elasticsearch' : '📁 JSON file';
+    badge.className = `es-pill ${data.data_source === 'elasticsearch' ? 'connected' : 'fallback'}`;
+
+    if (!data.events || data.events.length === 0) {
+      document.getElementById('historyContent').innerHTML = `
+        <div class="no-data">
+          <div class="no-data-icon">📭</div>
+          <p>Không có dữ liệu trong khoảng thời gian đã chọn.</p>
+        </div>`;
+      return;
+    }
+
+    const rows = data.events.map(ev => {
+      const ts       = new Date(ev.timestamp).toLocaleString('vi-VN');
+      const isFire   = ev.is_fire;
+      const fireBadge = isFire
+        ? '<span class="fire-badge">🔥 CÓ LỬA</span>'
+        : '<span class="nofire-badge">✅ Bình thường</span>';
+      const srcBadge = `<span class="source-badge">${ev.source === 'webcam' ? '🎥' : '📸'} ${ev.source}</span>`;
+      const conf     = ((ev.best_confidence || 0)*100).toFixed(1);
+      return `
+        <tr class="${isFire ? 'fire-row' : ''}">
+          <td>${ts}</td>
+          <td>${srcBadge}</td>
+          <td>${fireBadge}</td>
+          <td class="model-name-small">${ev.best_model_name || '—'}</td>
+          <td class="conf-text">${conf}%</td>
+          <td style="color:var(--text2);font-size:.75rem">
+            ${ev.fire_votes || 0}/${ev.total_models || 0} models
+          </td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('historyContent').innerHTML = `
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>⏰ Thời gian</th>
+              <th>📡 Nguồn</th>
+              <th>🔥 Kết quả</th>
+              <th>🤖 Model</th>
+              <th>📈 Confidence</th>
+              <th>🗳️ Bỏ phiếu</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p style="font-size:.75rem;color:var(--text2);margin-top:12px;text-align:right">
+          Hiển thị ${data.events.length} sự kiện gần nhất
+        </p>
+      </div>`;
+  } catch(e) {
+    document.getElementById('historyContent').innerHTML =
+      '<div class="alert-banner alert-error">❌ Lỗi tải lịch sử: ' + e.message + '</div>';
+  }
+}
+
+// ══════════════════════════════════════════════
+// DASHBOARD / CHARTS
+// ══════════════════════════════════════════════
+function chartColor() {
+  return document.documentElement.getAttribute('data-theme') === 'dark'
+    ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+}
+const CHART_DEFAULTS = {
+  color: () => chartColor(),
+  font: { family: 'Inter' },
+};
+
+async function loadDashboard() {
+  const hours = document.getElementById('dashHours').value;
+  try {
+    const stats = await fetch(`/statistics?hours=${hours}`).then(r => r.json());
+
+    // Stats cards
+    document.getElementById('statTotal').textContent  = stats.total_events.toLocaleString();
+    document.getElementById('statFire').textContent   = stats.fire_count.toLocaleString();
+    document.getElementById('statNoFire').textContent = stats.no_fire_count.toLocaleString();
+    document.getElementById('statRate').textContent   = (stats.fire_rate*100).toFixed(1)+'%';
+    document.getElementById('statConf').textContent   = (stats.avg_confidence*100).toFixed(1)+'%';
+
+    // Chart.js options defaults
+    const baseOpts = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: chartColor(), font: {family:'Inter', size:11} } }
+      },
+      scales: {
+        x: { ticks: { color: chartColor(), font:{size:10} }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: chartColor() },                  grid: { color: 'rgba(255,255,255,0.05)' } },
+      }
+    };
+
+    // Timeline chart
+    buildChart('timelineChart', 'line', {
+      labels:   (stats.timeline || []).map(t => {
+        const d = new Date(t.time); return `${d.getHours()}:00`;
+      }),
+      datasets: [{
+        label:           'Sự kiện',
+        data:            (stats.timeline || []).map(t => t.count),
+        borderColor:     '#ff4757',
+        backgroundColor: 'rgba(255,71,87,0.12)',
+        tension:         0.4, fill: true, pointRadius: 3,
+      }]
+    }, {...baseOpts});
+
+    // Model chart
+    const modelLabels = Object.keys(stats.by_model || {});
+    const modelData   = Object.values(stats.by_model || {});
+    buildChart('modelChart', 'bar', {
+      labels: modelLabels,
+      datasets: [{
+        label: 'Lần phán quyết',
+        data: modelData,
+        backgroundColor: ['#ff4757','#ff6348','#ffa502','#2ed573','#5352ed','#a29bfe'],
+      }]
+    }, {...baseOpts});
+
+    // Source chart
+    const srcLabels = Object.keys(stats.by_source || {});
+    const srcData   = Object.values(stats.by_source || {});
+    buildChart('sourceChart', 'bar', {
+      labels: srcLabels.map(s => s === 'webcam' ? '🎥 Webcam' : '📸 Upload'),
+      datasets: [{
+        label: 'Sự kiện',
+        data: srcData,
+        backgroundColor: ['#5352ed','#ffa502'],
+      }]
+    }, {...baseOpts});
+
+    // Fire rate donut
+    buildChart('fireRateChart', 'doughnut', {
+      labels: ['🔥 Có lửa', '✅ An toàn'],
+      datasets: [{
+        data: [stats.fire_count, stats.no_fire_count],
+        backgroundColor: ['#ff4757','#2ed573'],
+        borderWidth: 0,
+      }]
+    }, {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: chartColor(), padding: 12, font:{size:11} } }
+      }
+    });
+
+  } catch(e) {
+    console.warn('Dashboard load error', e);
+  }
+}
+
+function buildChart(id, type, data, options) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (chartInstances[id]) chartInstances[id].destroy();
+  chartInstances[id] = new Chart(ctx, { type, data, options });
+}
+</script>
 </body>
-</html> 
+</html>

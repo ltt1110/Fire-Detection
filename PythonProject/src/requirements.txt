@@ -26,6 +26,14 @@ ultralytics>=8.0.0
 torch>=2.0.0
 torchvision>=0.15.0
 
+# ── Mới thêm ──────────────────────────────────
+# Lưu lịch sử detection vào Elasticsearch
+# (Graceful fallback sang JSONL nếu ES chưa chạy)
+elasticsearch>=8.0.0
+
+# Đọc .env file (bảo mật Telegram token, ES config, ...)
+python-dotenv>=1.0.0
+
 # Optional: For better performance
 # numba>=0.56.0
 # cython>=0.29.0

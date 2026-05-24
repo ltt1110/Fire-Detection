@@ -15,9 +15,10 @@ import shutil
 try:
     from ultralytics import YOLO
     YOLO_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError, Exception) as _yolo_err:
     YOLO_AVAILABLE = False
-    print("⚠️ Ultralytics YOLO chưa được cài đặt. Chạy: pip install ultralytics")
+    print(f"[YOLO] Khong the load: {_yolo_err}")
+    print("[YOLO] He thong se chay khong co YOLO, chi dung ML models.")
 
 
 class YOLOFireDetector:
